@@ -1,0 +1,4 @@
+
+
+int SINGLETON_VALUE = 0;
+
