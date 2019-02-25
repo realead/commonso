@@ -9,7 +9,14 @@ from setuptools.command.build_clib import build_clib as orig_build_clib
 import os
 import sys
 import sysconfig
+import platform
 
+# as used in distutils:
+#
+# from distutils.util import get_platform
+# PLAT_SPEC = "%s-%d.%d" % (get_platform(), *sys.version_info[:2])
+# src = os.path.join("build", "lib.%s" % PLAT_SPEC)
+#
 def path_to_lib_folder():
     """Returns the name of a distutils build directory"""
     f = "{dirname}.{platform}-{version[0]}.{version[1]}"
@@ -17,6 +24,18 @@ def path_to_lib_folder():
                     platform=sysconfig.get_platform(),
                     version=sys.version_info)
     return os.path.join('build', dir_name, 'commonso')
+
+def get_shared_object_name(lib_name):
+    if platform.system() == 'Windows':
+        return lib_name+'.dll'
+    else:
+        return 'lib'+lib_name+'.so'
+
+def get_extra_link_args():
+    if platform.system() == 'Windows':
+        return []
+    else:
+        return ["-Wl,-rpath=$ORIGIN/."]
 
 
 class build_shared_clib(orig_build_clib):
@@ -49,7 +68,7 @@ class build_shared_clib(orig_build_clib):
 
             self.compiler.link_shared_object(
                 objects,                     
-                'lib'+lib_name+'.so',
+                get_shared_object_name(lib_name),
                 output_dir=self.build_clib, 
                 target_lang=language
                 )
@@ -59,7 +78,7 @@ class build_shared_clib(orig_build_clib):
 setter_ext = Extension(
                 name='commonso.setter',
                 sources = ["src/commonso/setter.pyx"],
-                extra_link_args=["-Wl,-rpath=$ORIGIN/."],
+                extra_link_args = get_extra_link_args(),
                 #libraries=['common'], 
                 #library_dirs=[path_to_lib_folder()],
               )
@@ -67,7 +86,7 @@ setter_ext = Extension(
 getter_ext = Extension(
                 name='commonso.getter',
                 sources = ["src/commonso/getter.pyx"],
-                extra_link_args=["-Wl,-rpath=$ORIGIN/."],
+                extra_link_args = get_extra_link_args(),
                 #libraries=['common'], 
                 #library_dirs=[path_to_lib_folder()],
               )
@@ -77,7 +96,7 @@ libcommon = ('common', {'sources': ['src/commonso/common.c']})
 
 kwargs = {
       'name' : 'commonso',
-      'version' : '0.3.0',
+      'version' : '0.4.0',
       'description' : 'example how to install cython modules',
       'author' : 'Egor Dranischnikow',
       'url' : 'https://github.com/realead/commonso',

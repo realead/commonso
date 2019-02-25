@@ -1,4 +1,5 @@
+#define BUILDING_DLL
+#include "common.h"
 
-
-int SINGLETON_VALUE = 0;
+DLL_PUBLIC int SINGLETON_VALUE = 0;
 
