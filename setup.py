@@ -5,11 +5,24 @@ from setuptools.command.build_clib import build_clib as orig_build_clib
 #right path to shared-object:
 import os
 import sys
+import platform
 from distutils.util import get_platform
 
 def get_path_to_sharedobject():
     PLAT_SPEC = "{platform}-{version[0]}.{version[1]}".format(platform=get_platform(), version=sys.version_info)
     return os.path.join("build", "lib." + PLAT_SPEC, 'commonso')
+
+def get_shared_object_name(lib_name):
+    if platform.system() == 'Windows':
+        return lib_name+'.dll'
+    else:
+        return 'lib'+lib_name+'.so'
+
+def get_extra_link_args():
+    if platform.system() == 'Windows':
+        return []
+    else:
+        return ["-Wl,-rpath=$ORIGIN/."]
 
 
 class build_shared_clib(orig_build_clib):
@@ -40,7 +53,7 @@ class build_shared_clib(orig_build_clib):
             language = self.compiler.detect_language(sources)
             self.compiler.link_shared_object(
                 objects,                     
-                'lib'+lib_name+'.so',
+                get_shared_object_name(lib_name),
                 output_dir=self.build_clib, 
                 target_lang=language
                 )
@@ -50,13 +63,13 @@ class build_shared_clib(orig_build_clib):
 setter_ext = Extension(
                 name='commonso.setter',
                 sources = ["src/commonso/setter.pyx"],
-                extra_link_args=["-Wl,-rpath=$ORIGIN/."],
+                extra_link_args = get_extra_link_args(),
               )
 
 getter_ext = Extension(
                 name='commonso.getter',
                 sources = ["src/commonso/getter.pyx"],
-                extra_link_args=["-Wl,-rpath=$ORIGIN/."],
+                extra_link_args = get_extra_link_args(),
               )
 
 libcommon = ('common', {'sources': ['src/commonso/common.c'], 'cflags' : ['-O2']})
